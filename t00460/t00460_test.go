@@ -27,7 +27,7 @@ func Test_LFU_cache(t *testing.T) {
 }
 
 func TestLFUCache_Fail_Case(t *testing.T) {
-	//["LFUCache", "put", "put", "put", "put","get", "get", "get", "get", "put","get", "get", "get", "get", "get"]
+	//["LFUCache", "prepend", "prepend", "prepend", "prepend","get", "get", "get", "get", "prepend","get", "get", "get", "get", "get"]
 	//	[[3], [1, 1], [2, 2], [3, 3], [4, 4],[4], [3], [2], [1], [5, 5], [1], [2],[3], [4], [5]]
 
 	lfu := t00460.Constructor(3)
