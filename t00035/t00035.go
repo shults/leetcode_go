@@ -10,7 +10,7 @@ func searchInsertInternal(nums []int, target int, start, end int) int {
 	if end-start == 1 {
 		val := nums[mid]
 
-		if val >= target {
+		if val > target {
 			return mid
 		} else {
 			return mid + 1

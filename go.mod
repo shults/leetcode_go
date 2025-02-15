@@ -1,6 +1,6 @@
 module leetcode_go
 
-go 1.22.8
+go 1.24.0
 
 require (
 	github.com/davecgh/go-spew v1.1.1 // indirect

@@ -6,7 +6,6 @@ import (
 )
 
 func Test(t *testing.T) {
-
 	for _, c := range []struct {
 		input    []int
 		target   int
