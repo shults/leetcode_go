@@ -1,8 +1,16 @@
 package t00049
 
-import (
-	"slices"
-)
+type anagramKey [26]byte
+
+func newAnagramKey(word string) anagramKey {
+	var res anagramKey
+
+	for _, b := range word {
+		res[b-'a']++
+	}
+
+	return res
+}
 
 func groupAnagrams(strs []string) [][]string {
 	col := newAnagramCollection()
@@ -18,7 +26,7 @@ func groupAnagrams(strs []string) [][]string {
 func newAnagram() *anagram {
 	return &anagram{
 		capacity: 0,
-		items:    make(map[string]int),
+		items:    make(map[string]byte),
 	}
 }
 
@@ -29,32 +37,29 @@ func (a *anagram) addItem(word string) {
 }
 
 type anagram struct {
-	items    map[string]int
+	items    map[string]byte
 	capacity int
 }
 
 type anagramCollection struct {
-	aMap map[string]*anagram
+	aMap map[anagramKey]*anagram
 }
 
 func newAnagramCollection() *anagramCollection {
 	return &anagramCollection{
-		aMap: make(map[string]*anagram),
+		aMap: make(map[anagramKey]*anagram),
 	}
 }
 
 func (a *anagramCollection) findOrCreate(word string) *anagram {
-	bWord := []byte(word)
-	slices.Sort(bWord)
+	key := newAnagramKey(word)
 
-	if anagramItem, ok := a.aMap[string(bWord)]; ok {
+	if anagramItem, ok := a.aMap[key]; ok {
 		return anagramItem
 	}
 
 	anagramItem := newAnagram()
-
-	a.aMap[string(bWord)] = anagramItem
-
+	a.aMap[key] = anagramItem
 	return anagramItem
 }
 
@@ -65,7 +70,7 @@ func (a *anagramCollection) prepareResult() [][]string {
 		var aItems = make([]string, 0, aItem.capacity)
 
 		for key, value := range aItem.items {
-			for i := 0; i < value; i++ {
+			for i := byte(0); i < value; i++ {
 				aItems = append(aItems, key)
 			}
 		}
