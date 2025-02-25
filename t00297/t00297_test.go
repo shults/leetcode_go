@@ -39,8 +39,6 @@ func TestCase(t *testing.T) {
 	fmt.Printf("%s\n", codec.serialize(tree))
 }
 
-//
-
 func newNode(val int) *TreeNode {
 	return &TreeNode{Val: val}
 }

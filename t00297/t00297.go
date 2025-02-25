@@ -2,8 +2,57 @@ package t00297
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
 )
+
+var null = []byte("null")
+
+func newBuilder() *Builder {
+	b := &Builder{
+		numberOfNils: 0,
+		isFirst:      true,
+	}
+
+	return b
+}
+
+type Builder struct {
+	numberOfNils int
+	sb           strings.Builder
+	isFirst      bool
+}
+
+func (b *Builder) writeNil() {
+	b.numberOfNils++
+}
+
+func (b *Builder) flushNils() {
+	for i := 0; i < b.numberOfNils; i++ {
+		if !b.isFirst {
+			b.sb.WriteByte(',')
+		}
+		b.isFirst = false
+
+		_, _ = b.sb.Write(null)
+	}
+	b.numberOfNils = 0
+}
+
+func (b *Builder) write(val int) {
+	b.flushNils()
+
+	if !b.isFirst {
+		b.sb.WriteByte(',')
+	}
+	b.isFirst = false
+
+	b.sb.WriteString(strconv.Itoa(val))
+}
+
+func (b *Builder) String() string {
+	return fmt.Sprintf("[%s]", b.sb.String())
+}
 
 type Codec struct {
 }
@@ -14,165 +63,96 @@ func Constructor() Codec {
 
 // Serializes a tree to a single string.
 func (r *Codec) serialize(root *TreeNode) string {
-	type entry struct {
-		node  *TreeNode
-		depth int
-	}
 
-	var stopDepth = maxDepth(root)
-	var builder strings.Builder
-	var queue = NewQueue[entry]()
+	var queue = NewQueue[*TreeNode]()
 
-	queue.Enqueue(entry{
-		depth: 0,
-		node:  root,
-	})
-
-	builder.WriteByte('[')
-
-	var isFirst = true
+	queue.Enqueue(root)
+	var builder = newBuilder()
 
 	for !queue.IsEmpty() {
-		entryInstance, err := queue.Dequeue()
+		item, err := queue.Dequeue()
 
 		if err != nil {
 			panic(err)
 		}
 
-		if entryInstance.depth == stopDepth {
-			break
-		}
-
-		if !isFirst {
-			builder.WriteString(",")
-		}
-
-		isFirst = false
-
-		if entryInstance.node == nil {
-			builder.WriteString("null")
+		if item == nil {
+			builder.writeNil()
+			continue
 		} else {
-			builder.WriteString(fmt.Sprintf("%d", entryInstance.node.Val))
+			builder.write(item.Val)
 		}
 
-		queue.Enqueue(entry{
-			depth: entryInstance.depth + 1,
-			node:  left(entryInstance.node),
-		})
-
-		queue.Enqueue(entry{
-			depth: entryInstance.depth + 1,
-			node:  right(entryInstance.node),
-		})
+		queue.Enqueue(item.Left)
+		queue.Enqueue(item.Right)
 	}
 
-	builder.WriteByte(']')
 	return builder.String()
 }
 
 // Deserializes your encoded data to tree.
 func (r *Codec) deserialize(data string) *TreeNode {
+	iter := NewParser(data)
 
-	iter := NewIterator(data)
-
-	first, active := iter.Next()
+	first, _, active := iter.Next()
 
 	if !active {
 		return nil
 	}
 
 	root := new(TreeNode)
-	root.Val = *first
+	root.Val = first
 
 	queue := NewQueue[*TreeNode]()
 	queue.Enqueue(root)
 
 	for !queue.IsEmpty() {
 		parent, _ := queue.Dequeue()
-
-		// left
-		leftValue, isActive := iter.Next()
+		leftValue, isNil, isActive := iter.Next()
 
 		if !isActive {
 			break
 		}
 
-		var leftNode *TreeNode
-
-		if parent != nil && leftValue != nil {
+		if parent != nil && !isNil {
 			parent.Left = new(TreeNode)
-			parent.Left.Val = *leftValue
-			leftNode = parent.Left
+			parent.Left.Val = leftValue
+			queue.Enqueue(parent.Left)
 		}
-
-		queue.Enqueue(leftNode)
 
 		// right
-		rightValue, isActive := iter.Next()
+		rightValue, isNil, isActive := iter.Next()
 
 		if !isActive {
 			break
 		}
 
-		var rightNode *TreeNode
-
-		if parent != nil && rightValue != nil {
+		if parent != nil && !isNil {
 			parent.Right = new(TreeNode)
-			parent.Right.Val = *rightValue
-			rightNode = parent.Right
+			parent.Right.Val = rightValue
+			queue.Enqueue(parent.Right)
 		}
 
-		queue.Enqueue(rightNode)
 	}
 
 	return root
 }
 
-func left(n *TreeNode) *TreeNode {
-	if n == nil {
-		return nil
-	}
-
-	return n.Left
-}
-
-func right(n *TreeNode) *TreeNode {
-	if n == nil {
-		return nil
-	}
-
-	return n.Right
-}
-
-func maxDepth(n *TreeNode) int {
-	if n == nil {
-		return 0
-	}
-
-	return 1 + max(maxDepth(n.Left), maxDepth(n.Right))
-}
-
-type TreeNode struct {
-	Val   int
-	Left  *TreeNode
-	Right *TreeNode
-}
-
-type Iterator struct {
+type Parser struct {
 	data string
 	pos  int
 }
 
-func NewIterator(data string) *Iterator {
-	return &Iterator{
+func NewParser(data string) *Parser {
+	return &Parser{
 		data: data,
 		pos:  0,
 	}
 }
 
-func (r *Iterator) Next() (*int, bool) {
+func (r *Parser) Next() (val int, isNil bool, isActive bool) {
 	if r.pos >= len(r.data) {
-		return nil, false
+		return 0, true, false
 	}
 
 	var ch = r.data[r.pos]
@@ -180,7 +160,7 @@ func (r *Iterator) Next() (*int, bool) {
 	switch {
 	case ch == ']':
 		r.pos++
-		return nil, false
+		return 0, true, false
 	case ch == '[' || ch == ',':
 		r.pos++
 		return r.Next()
@@ -193,7 +173,7 @@ func (r *Iterator) Next() (*int, bool) {
 			}
 		}
 		r.pos += 4
-		return nil, true
+		return 0, true, true
 	case isDigit(ch) || ch == '-':
 		var number int
 		var isNegative = ch == '-'
@@ -214,7 +194,7 @@ func (r *Iterator) Next() (*int, bool) {
 			number *= -1
 		}
 
-		return &number, true
+		return number, false, true
 	default:
 		panic(fmt.Sprintf("unexpected invariant char=%s", string(ch)))
 	}
@@ -321,4 +301,10 @@ func newQError(msg string) qError {
 
 func (e qError) Error() string {
 	return e.msg
+}
+
+type TreeNode struct {
+	Val   int
+	Left  *TreeNode
+	Right *TreeNode
 }
