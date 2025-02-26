@@ -28,6 +28,7 @@ func (b *Builder) writeNil() {
 }
 
 func (b *Builder) flushNils() {
+
 	for i := 0; i < b.numberOfNils; i++ {
 		if !b.isFirst {
 			b.sb.WriteByte(',')
