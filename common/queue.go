@@ -12,10 +12,6 @@ type (
 		prev *queueNode[T]
 		next *queueNode[T]
 	}
-
-	qError struct {
-		msg string
-	}
 )
 
 func NewQueue[T any]() *Queue[T] {
@@ -30,7 +26,7 @@ func (q *Queue[T]) Len() int {
 	return q.length
 }
 
-func (q *Queue[T]) IsEmpty() bool {
+func (q *Queue[T]) Empty() bool {
 	return q.length == 0
 }
 
@@ -55,10 +51,9 @@ func (q *Queue[T]) Enqueue(val T) {
 	q.length++
 }
 
-func (q *Queue[T]) Dequeue() (T, error) {
+func (q *Queue[T]) Dequeue() T {
 	if q.length == 0 {
-		var zero T
-		return zero, newQError("empty queue")
+		panic("empty queue")
 	}
 
 	val := q.head.val
@@ -78,15 +73,5 @@ func (q *Queue[T]) Dequeue() (T, error) {
 
 	q.length--
 
-	return val, nil
-}
-
-func newQError(msg string) qError {
-	return qError{
-		msg: msg,
-	}
-}
-
-func (e qError) Error() string {
-	return e.msg
+	return val
 }

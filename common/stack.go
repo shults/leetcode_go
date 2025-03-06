@@ -1,7 +1,5 @@
 package common
 
-import "errors"
-
 type Stack[T any] struct {
 	length int
 	last   *StackNode[T]
@@ -16,32 +14,20 @@ func NewStack[T any]() *Stack[T] {
 	return &Stack[T]{}
 }
 
-func (s *Stack[T]) IsEmpty() bool {
+func (s *Stack[T]) Empty() bool {
 	return s.length == 0
 }
 
-func (s *Stack[T]) Pop() (T, error) {
-
-	if s.IsEmpty() {
-		var zero T
-		return zero, errors.New("fuck")
+func (s *Stack[T]) Pop() T {
+	if s.Empty() {
+		panic("stack is empty")
 	}
 
 	s.length--
 	item := s.last
 	s.last = s.last.prev
 
-	return item.val, nil
-}
-
-func (s *Stack[T]) MustPop() T {
-	val, err := s.Pop()
-
-	if err != nil {
-		panic(err)
-	}
-
-	return val
+	return item.val
 }
 
 func (s *Stack[T]) Push(val T) {
@@ -52,4 +38,18 @@ func (s *Stack[T]) Push(val T) {
 
 	s.last = last
 	s.length++
+}
+
+type PriorityStack[T any] struct {
+	items *Stack[T]
+}
+
+func NewPriorityStack[T any]() *PriorityStack[T] {
+	return &PriorityStack[T]{
+		items: nil,
+	}
+}
+
+func (s *PriorityStack[T]) Push(priority int, val T) {
+
 }

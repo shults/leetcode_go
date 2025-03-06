@@ -13,18 +13,15 @@ func Test(t *testing.T) {
 	q.Enqueue(2)
 	q.Enqueue(3)
 
-	val, err := q.Dequeue()
-	require.Nil(t, err)
+	val := q.Dequeue()
 	require.Equal(t, 1, val)
 	require.Equal(t, 2, q.Len())
 
-	val, err = q.Dequeue()
-	require.Nil(t, err)
+	val = q.Dequeue()
 	require.Equal(t, 2, val)
 	require.Equal(t, 1, q.Len())
 
-	val, err = q.Dequeue()
-	require.Nil(t, err)
+	val = q.Dequeue()
 	require.Equal(t, 3, val)
 	require.Equal(t, 0, q.Len())
 
